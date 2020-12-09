@@ -3,12 +3,12 @@ import Utils.toBinary
 import kotlin.math.pow
 import kotlin.random.Random
 
-const val rows = 11 // Número de linhas do tabuleiro
-const val cols = 11 // Número de colunas do tabuleiro
+const val rows = 4 // Número de linhas do tabuleiro
+const val cols = 4 // Número de colunas do tabuleiro
 const val bits =
-    8 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
+    5 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
 const val initialPopulationSize = 100 // Tamanho da população inicial
-const val queens = 7 // Número de rainhas
+const val queens = 2 // Número de rainhas
 var epoch = 0
 
 fun main() {
