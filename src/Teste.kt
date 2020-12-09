@@ -3,12 +3,12 @@ import Utils.toBinary
 import kotlin.math.pow
 import kotlin.random.Random
 
-const val rows = 4 // Número de linhas do tabuleiro
-const val cols = 4 // Número de colunas do tabuleiro
+const val rows = 8 // Número de linhas do tabuleiro
+const val cols = 8 // Número de colunas do tabuleiro
 const val bits =
-    5 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
+    7 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
 const val initialPopulationSize = 100 // Tamanho da população inicial
-const val queens = 2 // Número de rainhas
+const val queens = 3 // Número de rainhas
 var epoch = 0
 
 fun main() {
@@ -19,7 +19,7 @@ fun main() {
 
     var best = getDominatedPositions(initialPopulation, tabuleiro)
 
-    for (i in 0 until 50)
+    for (i in 0 until 100)
         best = getDominatedPositions(best.toTypedArray(), tabuleiro)
 
 }
@@ -89,8 +89,9 @@ fun childrenGenerator(firstParent: Array<String>, secondParent: Array<String>): 
     for (i in 0 until 2) {
         val childArray = mutableListOf<String>()
         for (j in 0 until queens) {
-            val firstParentGenoma = firstParent[j].substring(0, bits / 2)
-            val secondParentGenoma = secondParent[j].substring(bits / 2, secondParent[j].length)
+            val random = Random.nextInt(0, firstParent[j].length)
+            val firstParentGenoma = firstParent[j].substring(0, random)
+            val secondParentGenoma = secondParent[j].substring(random, secondParent[j].length)
 
             var genoma = if (i == 0) {
                 firstParentGenoma + secondParentGenoma
