@@ -1,31 +1,41 @@
 import Utils.convertBinaryToDecimal
 import Utils.toBinary
+import kotlin.math.pow
 import kotlin.random.Random
 
-const val rows = 4 // Número de linhas do tabuleiro
-const val cols = 4 // Número de colunas do tabuleiro
+const val rows = 11 // Número de linhas do tabuleiro
+const val cols = 11 // Número de colunas do tabuleiro
 const val bits =
-    5 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
-const val initialPopulationSize = 20 // Tamanho da população inicial
-const val queens = 2 // Número de rainhas
+    8 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
+const val initialPopulationSize = 100 // Tamanho da população inicial
+const val queens = 7 // Número de rainhas
+var epoch = 0
 
 fun main() {
     var num = 1
+    var epoch = 0
     val tabuleiro = Array(rows) { IntArray(cols) { num++ } }
     val initialPopulation = generateInitial(initialPopulationSize, queens, bits)
 
-    getDominatedPositions(initialPopulation, tabuleiro)
+    var best = getDominatedPositions(initialPopulation, tabuleiro)
+
+    for (i in 0 until 50)
+        best = getDominatedPositions(best.toTypedArray(), tabuleiro)
+
 }
 
-fun generateInitial(n: Int, k: Int, len: Int) = Array(n) { Array(k) { toBinary((0..16).random(), len) } }
+fun generateInitial(n: Int, k: Int, len: Int): Array<Array<String>> {
+    val nBits = 2.0.pow(bits.toDouble()).toInt()
+    return Array(n) { Array(k) { toBinary((0..nBits).random(), len) } }
+}
 
-fun getDominatedPositions(initialMatrix: Array<Array<String>>, tabuleiro: Array<IntArray>) {
+fun getDominatedPositions(initialMatrix: Array<Array<String>>, tabuleiro: Array<IntArray>): MutableList<Array<String>> {
     val dominateSpace = arrayListOf<MutableSet<Pair<Int, Int>>>()
     val result = hashMapOf<Array<String>, Double>()
 
     initialMatrix.forEachIndexed { indexMatrix, positions ->
         dominateSpace.add(mutableSetOf())
-        for (indexQueen in 0 until queens) {
+        for (indexQueen in 0..queens - 1) {
             var position = Pair(0, 0)
 
             tabuleiro.forEachIndexed { indexRow, row ->
@@ -45,13 +55,12 @@ fun getDominatedPositions(initialMatrix: Array<Array<String>>, tabuleiro: Array<
             parseDominateSpaceToBinary(dominateSpace[indexMatrix], tabuleiro)
         }
 
-        result[positions] = calculateFitnessFunction(dominateSpace.size)
+        result[positions] = calculateFitnessFunction(dominateSpace[indexMatrix].size)
     }
 
     val resultSorted = result.toList().sortedBy { (_, value) -> value }.reversed().toMap()
-    var bestPopulation = resultSorted.keys.toList().subList(0, resultSorted.size / 2).toMutableList()
-
-    var bestPopulationRoulette = resultSorted.keys.toList().subList(0, resultSorted.size / 2).toMutableList()
+    val bestPopulation = resultSorted.keys.toList().subList(0, resultSorted.size / 2).toMutableList()
+    val bestPopulationRoulette = resultSorted.keys.toList().subList(0, resultSorted.size / 2).toMutableList()
 
     while (bestPopulationRoulette.size > 0) {
         var randomIndex = Random.nextInt(0, bestPopulationRoulette.size)
@@ -64,70 +73,56 @@ fun getDominatedPositions(initialMatrix: Array<Array<String>>, tabuleiro: Array<
         bestPopulation.addAll(childrenGenerator(firstParent, secondParent))
     }
 
-    println(bestPopulationRoulette)
-}
-
-fun childrenGenerator(firstParent: Array<String>, secondParent: Array<String>): Array<Array<String>> {
-
-    val firstGenomaFirstParent = firstParent[0].substring(0, bits / 2)
-    val secondGenomaFirstParent = firstParent[0].substring(bits / 2, firstParent[0].length)
-
-    val firstGenomaSecondParent = secondParent[1].substring(0, bits / 2)
-    val secondGenomaSecondParent = firstParent[1].substring(bits / 2, firstParent[1].length)
-
-
-    var firstChild = firstGenomaFirstParent + secondGenomaSecondParent
-    var secondChild = secondGenomaFirstParent + firstGenomaSecondParent
-    var thirdChild = firstGenomaFirstParent + firstGenomaSecondParent
-    var fourthChild = secondGenomaFirstParent + secondGenomaSecondParent
-
-    firstChild = verifyChildIsZero(firstChild)
-    secondChild = verifyChildIsZero(secondChild)
-    thirdChild = verifyChildIsZero(thirdChild)
-    fourthChild = verifyChildIsZero(fourthChild)
-
-    firstChild = verifyChildIsMoreThanBoardSize(firstChild)
-    secondChild = verifyChildIsMoreThanBoardSize(secondChild)
-    thirdChild = verifyChildIsMoreThanBoardSize(thirdChild)
-    fourthChild = verifyChildIsMoreThanBoardSize(fourthChild)
-
-    val mutabilityRate = Random.nextDouble(0.0, 1.0)
-
-    if (mutabilityRate <= 0.05) {
-        for (i in 0..1) {
-            val randomIndex = Random.nextInt(0, firstChild.length)
-            val fistChildGene = firstChild[randomIndex]
-            val secondChildGene = secondChild[randomIndex]
-            val thirdChildGene = thirdChild[randomIndex]
-            val fourthChildGene = fourthChild[randomIndex]
-
-            firstChild = if (fistChildGene == '1') {
-                firstChild.substring(0, randomIndex) + '0' + firstChild.substring(randomIndex + 1)
-            } else {
-                firstChild.substring(0, randomIndex) + '1' + firstChild.substring(randomIndex + 1)
-            }
-
-            secondChild = if (secondChildGene == '1') {
-                secondChild.substring(0, randomIndex) + '0' + secondChild.substring(randomIndex + 1)
-            } else {
-                secondChild.substring(0, randomIndex) + '1' + secondChild.substring(randomIndex + 1)
-            }
-
-            thirdChild = if (thirdChildGene == '1') {
-                thirdChild.substring(0, randomIndex) + '0' + thirdChild.substring(randomIndex + 1)
-            } else {
-                thirdChild.substring(0, randomIndex) + '1' + thirdChild.substring(randomIndex + 1)
-            }
-
-            fourthChild = if (fourthChildGene == '1') {
-                fourthChild.substring(0, randomIndex) + '0' + fourthChild.substring(randomIndex + 1)
-            } else {
-                fourthChild.substring(0, randomIndex) + '1' + fourthChild.substring(randomIndex + 1)
-            }
-        }
+    epoch++
+    println(epoch)
+    for ((key, value) in resultSorted) {
+        println("${key.contentToString()} = $value")
+        break
     }
 
-    return arrayOf(arrayOf(firstChild, secondChild), arrayOf(thirdChild, fourthChild))
+    return bestPopulation
+}
+
+fun childrenGenerator(firstParent: Array<String>, secondParent: Array<String>): ArrayList<Array<String>> {
+    val children = arrayListOf<Array<String>>()
+
+    for (i in 0 until 2) {
+        val childArray = mutableListOf<String>()
+        for (j in 0 until queens) {
+            val firstParentGenoma = firstParent[j].substring(0, bits / 2)
+            val secondParentGenoma = secondParent[j].substring(bits / 2, secondParent[j].length)
+
+            var genoma = if (i == 0) {
+                firstParentGenoma + secondParentGenoma
+            } else {
+                secondParentGenoma + firstParentGenoma
+            }
+
+            genoma = verifyChildIsZero(genoma)
+            genoma = verifyChildIsMoreThanBoardSize(genoma)
+
+            val mutabilityRate = Random.nextDouble(0.0, 1.0)
+
+            if (mutabilityRate <= 0.05) {
+                for (i in 0..1) {
+                    val randomIndex = Random.nextInt(0, genoma.length)
+                    val fistChildGene = genoma[randomIndex]
+
+                    genoma = if (fistChildGene == '1') {
+                        genoma.substring(0, randomIndex) + '0' + genoma.substring(randomIndex + 1)
+                    } else {
+                        genoma.substring(0, randomIndex) + '1' + genoma.substring(randomIndex + 1)
+                    }
+                }
+            }
+
+            childArray.add(genoma)
+        }
+
+        children.add(childArray.toTypedArray())
+    }
+
+    return children
 }
 
 fun verifyChildIsZero(child: String): String {
