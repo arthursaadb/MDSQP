@@ -8,7 +8,7 @@ const val cols = 8 // Número de colunas do tabuleiro
 const val bits =
     7 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
 const val initialPopulationSize = 100 // Tamanho da população inicial
-const val queens = 4 // Número de rainhas
+const val queens = 5 // Número de rainhas
 var epoch = 0
 
 fun main() {
@@ -17,11 +17,11 @@ fun main() {
     val tabuleiro = Array(rows) { IntArray(cols) { num++ } }
     val initialPopulation = generateInitial(initialPopulationSize, queens, bits)
     val initialVelocity = Array(initialPopulationSize) { Array(queens) { 0.0 } }
-    val iterations = 1000;
+    val iterations = 100;
     var iter = 0;
-    val W = 0
-    val c1 = 2
-    val c2 = 2
+    val W = 0.5
+    val c1 = 1.1
+    val c2 = 1.1
 
     var gbest: Double = 0.0
     do {
@@ -72,6 +72,26 @@ fun main() {
 
                 xid += initialVelocity[i][j]
                 initialPopulation[i][j] = toBinary(xid.toInt(), bits)
+
+                var genoma = initialPopulation[i][j]
+
+                val mutabilityRate = Random.nextDouble(0.0, 1.0)
+
+                if (mutabilityRate <= 0.05) {
+                    for (i in 0..1) {
+                        val randomIndex = Random.nextInt(0, genoma.length)
+                        val fistChildGene = genoma[randomIndex]
+
+                        genoma = if (fistChildGene == '1') {
+                            genoma.substring(0, randomIndex) + '0' + genoma.substring(randomIndex + 1)
+                        } else {
+                            genoma.substring(0, randomIndex) + '1' + genoma.substring(randomIndex + 1)
+                        }
+                    }
+                }
+
+                initialPopulation[i][j] = genoma
+
                 verifyChildIsMoreThanBoardSize(initialPopulation[i][j])
                 verifyChildIsZero(initialPopulation[i][j])
             }
