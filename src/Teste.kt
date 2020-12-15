@@ -8,7 +8,7 @@ const val cols = 8 // Número de colunas do tabuleiro
 const val bits =
     7 // Número de bits que representam as posições do tabuleiro, por exemplo: 4x4(10000) = 5 bits, 8x8(100000) = 7bits
 const val initialPopulationSize = 100 // Tamanho da população inicial
-const val queens = 3 // Número de rainhas
+const val queens = 4 // Número de rainhas
 var epoch = 0
 
 fun main() {
@@ -16,11 +16,69 @@ fun main() {
     var epoch = 0
     val tabuleiro = Array(rows) { IntArray(cols) { num++ } }
     val initialPopulation = generateInitial(initialPopulationSize, queens, bits)
+    val initialVelocity = Array(initialPopulationSize) { Array(queens) { 0.0 } }
+    val iterations = 1000;
+    var iter = 0;
+    val W = 0
+    val c1 = 2
+    val c2 = 2
 
-    var best = getDominatedPositions(initialPopulation, tabuleiro)
+    var gbest: Double = 0.0
+    do {
+        val dominateSpace = arrayListOf<MutableSet<Pair<Int, Int>>>()
+        var pbest: Double = 0.0
+        initialPopulation.forEachIndexed { indexMatrix, positions ->
+            dominateSpace.add(mutableSetOf())
+            for (indexQueen in 0..queens - 1) {
+                var position = Pair(0, 0)
 
-    for (i in 0 until 100)
-        best = getDominatedPositions(best.toTypedArray(), tabuleiro)
+                tabuleiro.forEachIndexed { indexRow, row ->
+                    row.forEachIndexed { indexCols, value ->
+                        if (value == convertBinaryToDecimal(initialPopulation[indexMatrix][indexQueen].toLong())) {
+                            position = Pair(indexRow, indexCols)
+                        }
+                    }
+                }
+
+
+                getDominatedPositionRows(position, tabuleiro[position.first], dominateSpace[indexMatrix])
+                getDominatedPositionCols(position, tabuleiro, dominateSpace[indexMatrix])
+                getDominatedPositionDiagonals(position, tabuleiro, dominateSpace[indexMatrix])
+
+                parseDominateSpaceToBinary(dominateSpace[indexMatrix], tabuleiro)
+            }
+
+            val currentResult = calculateFitnessFunction(dominateSpace[indexMatrix].size)
+
+            if (currentResult > pbest) {
+                pbest = currentResult
+            }
+        }
+        if (pbest > gbest) {
+            gbest = pbest
+        }
+        println("$gbest – $iter")
+
+        initialPopulation.forEachIndexed { i, positions ->
+            positions.forEachIndexed { j, queen ->
+
+                var xid = convertBinaryToDecimal(
+                    initialPopulation[i][j].toLong()
+                ).toDouble();
+                initialVelocity[i][j] =
+                    (W * initialVelocity[i][j] + c1 * Random.nextDouble() * (pbest - xid
+                            )) + c2 * Random.nextDouble() * (gbest - xid)
+
+
+                xid += initialVelocity[i][j]
+                initialPopulation[i][j] = toBinary(xid.toInt(), bits)
+                verifyChildIsMoreThanBoardSize(initialPopulation[i][j])
+                verifyChildIsZero(initialPopulation[i][j])
+            }
+        }
+
+        iter++;
+    } while (iter < iterations)
 
 }
 
@@ -32,31 +90,6 @@ fun generateInitial(n: Int, k: Int, len: Int): Array<Array<String>> {
 fun getDominatedPositions(initialMatrix: Array<Array<String>>, tabuleiro: Array<IntArray>): MutableList<Array<String>> {
     val dominateSpace = arrayListOf<MutableSet<Pair<Int, Int>>>()
     val result = hashMapOf<Array<String>, Double>()
-
-    initialMatrix.forEachIndexed { indexMatrix, positions ->
-        dominateSpace.add(mutableSetOf())
-        for (indexQueen in 0..queens - 1) {
-            var position = Pair(0, 0)
-
-            tabuleiro.forEachIndexed { indexRow, row ->
-                row.forEachIndexed { indexCols, value ->
-                    if (value == convertBinaryToDecimal(initialMatrix[indexMatrix][indexQueen].toLong())) {
-                        position = Pair(indexRow, indexCols)
-                    }
-                }
-            }
-
-
-            getDominatedPositionRows(position, tabuleiro[position.first], dominateSpace[indexMatrix])
-            getDominatedPositionCols(position, tabuleiro, dominateSpace[indexMatrix])
-            getDominatedPositionDiagonals(position, tabuleiro, dominateSpace[indexMatrix])
-
-
-            parseDominateSpaceToBinary(dominateSpace[indexMatrix], tabuleiro)
-        }
-
-        result[positions] = calculateFitnessFunction(dominateSpace[indexMatrix].size)
-    }
 
     val resultSorted = result.toList().sortedBy { (_, value) -> value }.reversed().toMap()
     val bestPopulation = resultSorted.keys.toList().subList(0, resultSorted.size / 2).toMutableList()
